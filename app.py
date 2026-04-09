@@ -92,7 +92,7 @@ with st.sidebar:
     st.markdown("### 🔑 API設定")
     gemini_key = st.text_input(
         "Anthropic API Key",
-        value=os.environ.get("ANTHROPIC_API_KEY", st.secrets.get("ANTHROPIC_API_KEY", "")),
+        value=os.environ.get("ANTHROPIC_API_KEY", "") or (st.secrets.get("ANTHROPIC_API_KEY", "") if hasattr(st, "secrets") else ""),
         type="password",
         help="Google Gemini APIキー（無料）"
     )
