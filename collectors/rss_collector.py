@@ -34,7 +34,7 @@ RSS_FEEDS = {
 # スコアリング用キーワード
 SCORE_KEYWORDS = {
     "high": [
-        "AI", "人工知能", "ChatGPT", "Claude", "LLM", "生成AI",
+        "Claude", "ChatGPT", "Cursor", "バイブコーディング", "AIコーディング", "生成AI",
         "DX", "デジタル変革", "スタートアップ", "資金調達",
         "マーケティング", "SNS", "X（Twitter）", "Instagram",
         "セキュリティ", "サイバー", "クラウド", "AWS", "Google",
