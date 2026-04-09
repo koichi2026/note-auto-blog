@@ -91,7 +91,7 @@ with st.sidebar:
 
     st.markdown("### 🔑 API設定")
     gemini_key = st.text_input(
-        "Gemini API Key",
+        "Anthropic API Key",
         value=os.environ.get("GEMINI_API_KEY", ""),
         type="password",
         help="Google Gemini APIキー（無料）"
@@ -153,7 +153,7 @@ with tab1:
 
         if st.button("📡 RSSを収集する", use_container_width=True, type="secondary"):
             if not gemini_key:
-                st.error("Gemini API Keyを設定してください")
+                st.error("Anthropic API Keyを設定してください")
             else:
                 with st.spinner("RSSフィードを収集中..."):
                     os.environ["GEMINI_API_KEY"] = gemini_key
@@ -195,7 +195,7 @@ with tab1:
 
         if st.button("✍️ 記事を生成する", use_container_width=True, type="primary"):
             if not gemini_key:
-                st.error("Gemini API Keyを設定してください")
+                st.error("Anthropic API Keyを設定してください")
             else:
                 os.environ["GEMINI_API_KEY"] = gemini_key
 
