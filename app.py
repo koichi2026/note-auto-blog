@@ -252,7 +252,7 @@ with tab2:
 
     # ファイルから記事を読み込む
    from generators.article_generator import load_articles
-    from github_storage import load_articles_from_github
+   from github_storage import load_articles_from_github
 
     col_filter1, col_filter2 = st.columns([1, 3])
     with col_filter1:
