@@ -162,7 +162,6 @@ async def save_to_note(
             await context.close()
             await browser.close()
 
-
 def save_to_note_sync(
     title: str,
     body_text: str,
@@ -171,11 +170,18 @@ def save_to_note_sync(
     note_password: str,
     headless: bool = True
 ) -> dict:
-    return asyncio.run(save_to_note(
-        title=title,
-        body_text=body_text,
-        hashtags=hashtags,
-        note_email=note_email,
-        note_password=note_password,
-        headless=headless
-    ))
+    import nest_asyncio
+    nest_asyncio.apply()
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        return loop.run_until_complete(save_to_note(
+            title=title,
+            body_text=body_text,
+            hashtags=hashtags,
+            note_email=note_email,
+            note_password=note_password,
+            headless=headless
+        ))
+    finally:
+        loop.close()
