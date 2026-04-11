@@ -281,40 +281,49 @@ async def input_title(page: Page, title: str) -> bool:
 
 async def input_body(page: Page, body_text: str) -> bool:
     """本文を入力する"""
+    await asyncio.sleep(2)
+    
     body_selectors = [
         ".ProseMirror",
         "[contenteditable='true']",
         ".o-editor__editable",
         "div[role='textbox']",
         ".ql-editor",
+        ".note-editor",
+        "div.DraftEditor-editorContainer",
     ]
 
     for selector in body_selectors:
         try:
             elements = await page.query_selector_all(selector)
-            # 複数ある場合はタイトル以外（2番目以降）を使う
             element = elements[-1] if len(elements) > 1 else (elements[0] if elements else None)
             if element:
                 await element.click()
+                await asyncio.sleep(1)
+                
+                # クリップボード経由で貼り付け
+                await page.evaluate("""
+                    async (text) => {
+                        await navigator.clipboard.writeText(text);
+                    }
+                """, body_text)
                 await asyncio.sleep(0.5)
-
-                # テキストをクリップボード経由で貼り付け（改行対応）
-                await page.evaluate(f"""
-                    const el = arguments[0];
-                    el.focus();
-                    document.execCommand('selectAll');
-                    document.execCommand('delete');
-                """, element)
-
+                await page.keyboard.press("Control+a")
                 await asyncio.sleep(0.3)
-                await page.keyboard.type(body_text[:100])  # 最初の部分を直接入力してフォーカス確認
+                await page.keyboard.press("Control+v")
+                await asyncio.sleep(1)
                 return True
         except Exception:
             continue
 
-    return False
-
-
+    # 最終手段：キーボードで直接入力
+    try:
+        await page.keyboard.press("Tab")
+        await asyncio.sleep(0.5)
+        await page.keyboard.type(body_text[:500])
+        return True
+    except Exception:
+        return False
 async def add_hashtags_to_body(page: Page, tag_text: str):
     """本文末尾にハッシュタグを追加する"""
     try:
