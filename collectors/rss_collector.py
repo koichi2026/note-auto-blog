@@ -1,6 +1,6 @@
 """
 RSS収集モジュール
-note.comのClaude・Anthropic・AI活用記事を中心に収集します
+Claude・Geminiの使い方・テクニック・設定方法に特化した記事を収集します
 """
 
 import feedparser
@@ -10,38 +10,43 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 RSS_FEEDS = {
-    "tech": [
+    "claude": [
         {"name": "note Claude", "url": "https://note.com/hashtag/Claude/rss"},
         {"name": "note Anthropic", "url": "https://note.com/hashtag/Anthropic/rss"},
         {"name": "note ClaudeAI", "url": "https://note.com/hashtag/ClaudeAI/rss"},
-        {"name": "note 生成AI", "url": "https://note.com/hashtag/生成AI/rss"},
-        {"name": "note AIツール", "url": "https://note.com/hashtag/AIツール/rss"},
-        {"name": "note AI活用", "url": "https://note.com/hashtag/AI活用/rss"},
-        {"name": "note プロンプト", "url": "https://note.com/hashtag/プロンプト/rss"},
+        {"name": "note Claude使い方", "url": "https://note.com/hashtag/Claude使い方/rss"},
     ],
-    "business": [
-        {"name": "note AI副業", "url": "https://note.com/hashtag/AI副業/rss"},
-        {"name": "note 仕事効率化", "url": "https://note.com/hashtag/仕事効率化/rss"},
-        {"name": "note AIで稼ぐ", "url": "https://note.com/hashtag/AIで稼ぐ/rss"},
+    "gemini": [
+        {"name": "note Gemini", "url": "https://note.com/hashtag/Gemini/rss"},
+        {"name": "note GoogleGemini", "url": "https://note.com/hashtag/GoogleGemini/rss"},
+        {"name": "note Gemini活用", "url": "https://note.com/hashtag/Gemini活用/rss"},
+    ],
+    "ai_tips": [
+        {"name": "note AIプロンプト", "url": "https://note.com/hashtag/AIプロンプト/rss"},
+        {"name": "note プロンプトエンジニアリング", "url": "https://note.com/hashtag/プロンプトエンジニアリング/rss"},
+        {"name": "note AI活用", "url": "https://note.com/hashtag/AI活用/rss"},
+        {"name": "note 生成AI活用", "url": "https://note.com/hashtag/生成AI活用/rss"},
+        {"name": "note AIツール", "url": "https://note.com/hashtag/AIツール/rss"},
     ]
 }
 
-# Claudeに関連するキーワードを最優先
 SCORE_KEYWORDS = {
     "high": [
-        "Claude", "Anthropic", "ClaudeAI", "claude",
-        "生成AI", "LLM", "プロンプト", "AI活用",
-        "使い方", "入門", "初心者", "活用法"
+        "Claude", "Anthropic", "Gemini", "Google Gemini",
+        "使い方", "テクニック", "設定", "活用法", "プロンプト",
+        "できること", "機能", "コツ", "方法", "ガイド",
+        "初心者", "入門", "基本", "応用"
     ],
     "medium": [
-        "ChatGPT", "Gemini", "AIツール", "自動化",
-        "効率化", "副業", "時短", "ノーコード"
+        "生成AI", "LLM", "AIツール", "自動化",
+        "効率化", "時短", "仕事術"
     ],
     "low": [
-        "まとめ", "解説", "ガイド"
+        "まとめ", "解説", "レビュー"
     ],
     "penalty": [
-        "月20万", "月30万", "稼ぎ方", "儲け"
+        "月20万", "月30万", "月50万", "稼ぎ方", "儲け",
+        "副業で稼ぐ", "不労所得"
     ]
 }
 
@@ -73,7 +78,6 @@ def score_article(title: str, summary: str = "") -> int:
     for keyword in SCORE_KEYWORDS["low"]:
         if keyword.lower() in text:
             score += 2
-    # ペナルティ（稼ぎ系の煽り記事を下げる）
     for keyword in SCORE_KEYWORDS["penalty"]:
         if keyword.lower() in text:
             score -= 10
@@ -87,7 +91,7 @@ def clean_html(text: str) -> str:
 
 
 def collect_articles(
-    categories: list = ["tech", "business"],
+    categories: list = ["claude", "gemini", "ai_tips"],
     max_age_hours: int = 24,
     limit: int = 20
 ) -> list:
@@ -133,7 +137,6 @@ def collect_articles(
 
     articles.sort(key=lambda x: x["score"], reverse=True)
 
-    # 重複URL除去
     seen_urls = set()
     unique_articles = []
     for a in articles:
