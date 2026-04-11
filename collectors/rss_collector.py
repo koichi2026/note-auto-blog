@@ -1,6 +1,6 @@
 """
 RSS収集モジュール
-note.comの記事のみを収集します
+note.comのClaude・Anthropic・AI活用記事を中心に収集します
 """
 
 import feedparser
@@ -11,37 +11,37 @@ from pathlib import Path
 
 RSS_FEEDS = {
     "tech": [
-        {"name": "note AI", "url": "https://note.com/hashtag/AI/rss"},
-        {"name": "note ChatGPT", "url": "https://note.com/hashtag/ChatGPT/rss"},
         {"name": "note Claude", "url": "https://note.com/hashtag/Claude/rss"},
+        {"name": "note Anthropic", "url": "https://note.com/hashtag/Anthropic/rss"},
+        {"name": "note ClaudeAI", "url": "https://note.com/hashtag/ClaudeAI/rss"},
         {"name": "note 生成AI", "url": "https://note.com/hashtag/生成AI/rss"},
         {"name": "note AIツール", "url": "https://note.com/hashtag/AIツール/rss"},
         {"name": "note AI活用", "url": "https://note.com/hashtag/AI活用/rss"},
         {"name": "note プロンプト", "url": "https://note.com/hashtag/プロンプト/rss"},
-        {"name": "note Anthropic", "url": "https://note.com/hashtag/Anthropic/rss"},
-        {"name": "note ClaudeAI", "url": "https://note.com/hashtag/ClaudeAI/rss"},
     ],
     "business": [
         {"name": "note AI副業", "url": "https://note.com/hashtag/AI副業/rss"},
-        {"name": "note 副業", "url": "https://note.com/hashtag/副業/rss"},
         {"name": "note 仕事効率化", "url": "https://note.com/hashtag/仕事効率化/rss"},
-        {"name": "note ChatGPT活用", "url": "https://note.com/hashtag/ChatGPT活用/rss"},
         {"name": "note AIで稼ぐ", "url": "https://note.com/hashtag/AIで稼ぐ/rss"},
     ]
 }
 
+# Claudeに関連するキーワードを最優先
 SCORE_KEYWORDS = {
     "high": [
-        "Claude", "ChatGPT", "Gemini", "生成AI", "LLM", "プロンプト",
-        "AI活用", "AI副業", "AIで稼ぐ", "自動化", "効率化",
-        "使い方", "入門", "初心者", "活用法", "ツール"
+        "Claude", "Anthropic", "ClaudeAI", "claude",
+        "生成AI", "LLM", "プロンプト", "AI活用",
+        "使い方", "入門", "初心者", "活用法"
     ],
     "medium": [
-        "人工知能", "機械学習", "副業", "仕事術", "時短",
-        "ノーコード", "収益化", "フリーランス"
+        "ChatGPT", "Gemini", "AIツール", "自動化",
+        "効率化", "副業", "時短", "ノーコード"
     ],
     "low": [
-        "まとめ", "解説", "ガイド", "レビュー"
+        "まとめ", "解説", "ガイド"
+    ],
+    "penalty": [
+        "月20万", "月30万", "稼ぎ方", "儲け"
     ]
 }
 
@@ -73,6 +73,10 @@ def score_article(title: str, summary: str = "") -> int:
     for keyword in SCORE_KEYWORDS["low"]:
         if keyword.lower() in text:
             score += 2
+    # ペナルティ（稼ぎ系の煽り記事を下げる）
+    for keyword in SCORE_KEYWORDS["penalty"]:
+        if keyword.lower() in text:
+            score -= 10
     if 20 <= len(title) <= 60:
         score += 5
     return score
@@ -101,7 +105,6 @@ def collect_articles(
                     url = entry.get("link", "")
                     if not url or url in seen_articles:
                         continue
-                    # note.comの記事のみ
                     if "note.com" not in url:
                         continue
                     published = entry.get("published_parsed")
@@ -129,7 +132,8 @@ def collect_articles(
                 continue
 
     articles.sort(key=lambda x: x["score"], reverse=True)
-    # 重複URLを除去
+
+    # 重複URL除去
     seen_urls = set()
     unique_articles = []
     for a in articles:
