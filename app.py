@@ -364,7 +364,7 @@ with tab3:
                             hashtags=article.get("hashtags", []),
                             note_email=note_email,
                             note_password=note_password,
-                            headless=True
+                            headless=False
                         )
 
                     if result.get("success"):
@@ -396,7 +396,7 @@ with tab3:
                         hashtags=article.get("hashtags", []),
                         note_email=note_email,
                         note_password=note_password,
-                        headless=True
+                        headless=False
                     )
 
                     if result.get("success"):
