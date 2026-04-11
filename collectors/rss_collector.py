@@ -18,6 +18,8 @@ RSS_FEEDS = {
         {"name": "note AIツール", "url": "https://note.com/hashtag/AIツール/rss"},
         {"name": "note AI活用", "url": "https://note.com/hashtag/AI活用/rss"},
         {"name": "note プロンプト", "url": "https://note.com/hashtag/プロンプト/rss"},
+        {"name": "note Anthropic", "url": "https://note.com/hashtag/Anthropic/rss"},
+        {"name": "note ClaudeAI", "url": "https://note.com/hashtag/ClaudeAI/rss"},
     ],
     "business": [
         {"name": "note AI副業", "url": "https://note.com/hashtag/AI副業/rss"},
