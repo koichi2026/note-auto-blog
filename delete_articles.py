@@ -1,6 +1,6 @@
 import sys, os, json, urllib.request
 sys.path.insert(0,'.')
-os.environ['GITHUB_TOKEN']='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'
+os.environ['GITHUB_TOKEN']=os.environ.get('GITHUB_TOKEN','')
 os.environ['GITHUB_REPO']='koichi2026/note-auto-blog'
 
 token = os.environ['GITHUB_TOKEN']
