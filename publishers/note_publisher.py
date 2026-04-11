@@ -167,15 +167,15 @@ async def login_to_note(page: Page, email: str, password: str) -> dict:
         await page.goto("https://note.com/login", wait_until="networkidle", timeout=30000)
         await asyncio.sleep(2)
 
-        # メールアドレス入力
-        email_selectors = [
-            "input[name='email']",
-            "input[type='email']",
-            "input[placeholder*='メール']",
-            "input[placeholder*='mail']",
-        ]
-
+       # メールアドレス入力（placeholder で識別）
         email_input = None
+        email_selectors = [
+            "input[placeholder*='mail']",
+            "input[placeholder*='メール']",
+            "input[placeholder*='ID']",
+            "input[type='email']",
+            "input[name='email']",
+        ]
         for selector in email_selectors:
             try:
                 email_input = await page.wait_for_selector(selector, timeout=3000)
@@ -185,9 +185,42 @@ async def login_to_note(page: Page, email: str, password: str) -> dict:
                 continue
 
         if not email_input:
+            # 最初のinputを使う
+            try:
+                inputs = await page.query_selector_all('input')
+                if inputs:
+                    email_input = inputs[0]
+            except Exception:
+                pass
+
+        if not email_input:
             return {"success": False, "message": "メール入力欄が見つかりませんでした"}
 
+        await email_input.click()
+        await asyncio.sleep(0.3)
         await email_input.fill(email)
+        await asyncio.sleep(0.5)
+
+        # パスワード入力
+        password_input = None
+        password_selectors = [
+            "input[type='password']",
+            "input[name='password']",
+        ]
+        for selector in password_selectors:
+            try:
+                password_input = await page.wait_for_selector(selector, timeout=3000)
+                if password_input:
+                    break
+            except Exception:
+                continue
+
+        if not password_input:
+            return {"success": False, "message": "パスワード入力欄が見つかりませんでした"}
+
+        await password_input.click()
+        await asyncio.sleep(0.3)
+        await password_input.fill(password)
         await asyncio.sleep(0.5)
 
         # パスワード入力
