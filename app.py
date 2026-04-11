@@ -10,13 +10,6 @@ import time
 from pathlib import Path
 from datetime import datetime
 from dotenv import load_dotenv
-try:
-    from github_storage import save_article_to_github, load_articles_from_github
-    GITHUB_ENABLED = True
-except Exception:
-    GITHUB_ENABLED = False
-    def save_article_to_github(a): return {"success": False}
-    def load_articles_from_github(): return []
 
 # .envファイルを自動読み込み
 load_dotenv(Path(__file__).parent / ".env")
@@ -98,8 +91,8 @@ with st.sidebar:
 
     st.markdown("### 🔑 API設定")
     gemini_key = st.text_input(
-        "Gemini API Key",
-        value=os.environ.get("GEMINI_API_KEY", ""),
+        "Anthropic API Key",
+        value=os.environ.get("ANTHROPIC_API_KEY", "") or (st.secrets.get("ANTHROPIC_API_KEY", "") if hasattr(st, "secrets") else ""),
         type="password",
         help="Google Gemini APIキー（無料）"
     )
@@ -160,7 +153,7 @@ with tab1:
 
         if st.button("📡 RSSを収集する", use_container_width=True, type="secondary"):
             if not gemini_key:
-                st.error("Gemini API Keyを設定してください")
+                st.error("Anthropic API Keyを設定してください")
             else:
                 with st.spinner("RSSフィードを収集中..."):
                     os.environ["GEMINI_API_KEY"] = gemini_key
@@ -202,7 +195,7 @@ with tab1:
 
         if st.button("✍️ 記事を生成する", use_container_width=True, type="primary"):
             if not gemini_key:
-                st.error("Gemini API Keyを設定してください")
+                st.error("Anthropic API Keyを設定してください")
             else:
                 os.environ["GEMINI_API_KEY"] = gemini_key
 
@@ -263,15 +256,7 @@ with tab2:
         status_filter = st.selectbox("ステータスフィルタ", ["すべて", "draft", "saved_to_note"])
 
     filter_map = {"すべて": None, "draft": "draft", "saved_to_note": "saved_to_note"}
-    github_articles = load_articles_from_github() if GITHUB_ENABLED else []
-    local_articles = load_articles(filter_map[status_filter])
-    seen = set()
-    saved_articles = []
-    for a in github_articles + local_articles:
-        key = a.get("title","") + a.get("generated_at","")
-        if key not in seen:
-            seen.add(key)
-            saved_articles.append(a)
+    saved_articles = load_articles(filter_map[status_filter])
 
     if not saved_articles:
         st.info("まだ記事が生成されていません。「記事を生成する」タブから記事を作成してください。")
@@ -379,7 +364,7 @@ with tab3:
                             hashtags=article.get("hashtags", []),
                             note_email=note_email,
                             note_password=note_password,
-                            headless=True
+                            headless=False
                         )
 
                     if result.get("success"):
@@ -411,7 +396,7 @@ with tab3:
                         hashtags=article.get("hashtags", []),
                         note_email=note_email,
                         note_password=note_password,
-                        headless=True
+                        headless=False
                     )
 
                     if result.get("success"):

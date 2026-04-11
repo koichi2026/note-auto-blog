@@ -1,4 +1,4 @@
-﻿"""
+"""
 記事生成モジュール
 Claude APIを使って、収集したnote記事を参考に初心者向け解説記事を生成します
 """
@@ -6,8 +6,7 @@ Claude APIを使って、収集したnote記事を参考に初心者向け解説
 import json
 import os
 import anthropic
-from datetime import datetime, timezone, timedelta
-JST = timezone(timedelta(hours=9))
+from datetime import datetime
 from pathlib import Path
 import random
 
@@ -97,7 +96,7 @@ def generate_article(source_title, source_summary, category, source_url, source_
             "source_title": source_title,
             "source_url": source_url,
             "source_name": source_name,
-            "generated_at": datetime.now(JST).isoformat(),
+            "generated_at": datetime.now().isoformat(),
             "status": "draft",
             "ai_model": "claude-haiku-4-5",
             "reference_articles": [a["title"] for a in all_articles[:5]]
