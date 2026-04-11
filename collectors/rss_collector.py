@@ -1,11 +1,11 @@
 """
 RSS収集モジュール
-note記事・ブログ記事をメインに収集します
+note.comの記事のみを収集します
 """
 
 import feedparser
 import json
-import os
+import re
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -13,38 +13,30 @@ RSS_FEEDS = {
     "tech": [
         {"name": "note AI", "url": "https://note.com/hashtag/AI/rss"},
         {"name": "note ChatGPT", "url": "https://note.com/hashtag/ChatGPT/rss"},
-        {"name": "note Claude", "url": "https://note.com/hashtag/Claude?rss"},
-        {"name": "note 生成AI", "url": "https://note.com/hashtag/生成AI?rss"},
-        {"name": "note AIツール", "url": "https://note.com/hashtag/AIツール?rss"},
-        {"name": "note AI活用", "url": "https://note.com/hashtag/AI活用?rss"},
-        {"name": "Zenn トレンド", "url": "https://zenn.dev/feed"},
-        {"name": "Ledge.ai", "url": "https://ledge.ai/feed/"},
-        {"name": "ITmedia NEWS", "url": "https://rss.itmedia.co.jp/rss/2.0/news_bursts.xml"},
-        {"name": "ヤフーニュース AI", "url": "https://news.yahoo.co.jp/rss/topics/it.xml"},
+        {"name": "note Claude", "url": "https://note.com/hashtag/Claude/rss"},
+        {"name": "note 生成AI", "url": "https://note.com/hashtag/生成AI/rss"},
+        {"name": "note AIツール", "url": "https://note.com/hashtag/AIツール/rss"},
+        {"name": "note AI活用", "url": "https://note.com/hashtag/AI活用/rss"},
+        {"name": "note プロンプト", "url": "https://note.com/hashtag/プロンプト/rss"},
     ],
     "business": [
-        {"name": "note 副業", "url": "https://note.com/hashtag/副業?rss"},
-        {"name": "note AI副業", "url": "https://note.com/hashtag/AI副業?rss"},
-        {"name": "note 仕事効率化", "url": "https://note.com/hashtag/仕事効率化?rss"},
-        {"name": "note プロンプト", "url": "https://note.com/hashtag/プロンプト?rss"},
-        {"name": "ライフハッカー", "url": "https://www.lifehacker.jp/feed/index.xml"},
-        {"name": "MarkeZine", "url": "https://markezine.jp/rss/index.rdf"},
+        {"name": "note AI副業", "url": "https://note.com/hashtag/AI副業/rss"},
+        {"name": "note 副業", "url": "https://note.com/hashtag/副業/rss"},
+        {"name": "note 仕事効率化", "url": "https://note.com/hashtag/仕事効率化/rss"},
+        {"name": "note ChatGPT活用", "url": "https://note.com/hashtag/ChatGPT活用/rss"},
+        {"name": "note AIで稼ぐ", "url": "https://note.com/hashtag/AIで稼ぐ/rss"},
     ]
 }
 
 SCORE_KEYWORDS = {
     "high": [
-        "Claude", "ChatGPT", "Cursor", "Copilot", "バイブコーディング",
-        "AIコーディング", "生成AI", "LLM", "プロンプト",
-        "AI副業", "AIで稼ぐ", "AI活用", "AI収入", "自動化",
-        "効率化", "時短", "生産性", "ノーコード", "副業",
-        "フリーランス", "在宅", "稼ぎ方", "使い方", "入門"
+        "Claude", "ChatGPT", "Gemini", "生成AI", "LLM", "プロンプト",
+        "AI活用", "AI副業", "AIで稼ぐ", "自動化", "効率化",
+        "使い方", "入門", "初心者", "活用法", "ツール"
     ],
     "medium": [
-        "人工知能", "機械学習", "ディープラーニング",
-        "プログラミング", "開発", "エンジニア",
-        "仕事術", "ビジネス", "収益化", "マネタイズ",
-        "最新", "トレンド", "活用法", "初心者"
+        "人工知能", "機械学習", "副業", "仕事術", "時短",
+        "ノーコード", "収益化", "フリーランス"
     ],
     "low": [
         "まとめ", "解説", "ガイド", "レビュー"
@@ -85,7 +77,6 @@ def score_article(title: str, summary: str = "") -> int:
 
 
 def clean_html(text: str) -> str:
-    import re
     return re.sub(re.compile('<.*?>'), '', text)
 
 
@@ -107,6 +98,9 @@ def collect_articles(
                 for entry in feed.entries:
                     url = entry.get("link", "")
                     if not url or url in seen_articles:
+                        continue
+                    # note.comの記事のみ
+                    if "note.com" not in url:
                         continue
                     published = entry.get("published_parsed")
                     if published:
@@ -133,8 +127,16 @@ def collect_articles(
                 continue
 
     articles.sort(key=lambda x: x["score"], reverse=True)
-    top_articles = articles[:limit]
-    print(f"\n✅ {len(top_articles)}件の記事を収集しました")
+    # 重複URLを除去
+    seen_urls = set()
+    unique_articles = []
+    for a in articles:
+        if a["url"] not in seen_urls:
+            seen_urls.add(a["url"])
+            unique_articles.append(a)
+
+    top_articles = unique_articles[:limit]
+    print(f"\n✅ {len(top_articles)}件のnote記事を収集しました")
     return top_articles
 
 
