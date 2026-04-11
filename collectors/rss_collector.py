@@ -92,7 +92,7 @@ def clean_html(text: str) -> str:
 
 def collect_articles(
     categories: list = ["claude", "gemini", "ai_tips"],
-    max_age_hours: int = 24,
+    max_age_hours: int = 504,
     limit: int = 20
 ) -> list:
     seen_articles = load_seen_articles()
