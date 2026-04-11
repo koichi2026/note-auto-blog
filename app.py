@@ -251,14 +251,23 @@ with tab2:
     st.markdown("### 📄 生成済み記事一覧")
 
     # ファイルから記事を読み込む
-    from generators.article_generator import load_articles
+   from generators.article_generator import load_articles
+    from github_storage import load_articles_from_github
 
     col_filter1, col_filter2 = st.columns([1, 3])
     with col_filter1:
         status_filter = st.selectbox("ステータスフィルタ", ["すべて", "draft", "saved_to_note"])
 
     filter_map = {"すべて": None, "draft": "draft", "saved_to_note": "saved_to_note"}
-    saved_articles = load_articles(filter_map[status_filter])
+    github_articles = load_articles_from_github()
+    local_articles = load_articles(filter_map[status_filter])
+    seen = set()
+    saved_articles = []
+    for a in github_articles + local_articles:
+        key = a.get("title","") + a.get("generated_at","")
+        if key not in seen:
+            seen.add(key)
+            saved_articles.append(a)
 
     if not saved_articles:
         st.info("まだ記事が生成されていません。「記事を生成する」タブから記事を作成してください。")
