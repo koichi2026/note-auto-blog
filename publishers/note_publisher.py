@@ -28,14 +28,11 @@ async def save_to_note(title, body_text, note_email, note_password, headless):
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=headless)
-        context_options = {}
-        if SESSION_FILE.exists():
-            context_options["storage_state"] = str(SESSION_FILE)
-
-        context = await browser.new_context(**context_options)
+        context = await browser.new_context()
         page = await context.new_page()
 
         try:
+            # 毎回ログインする（セッション不使用）
             print("🔐 ログイン中...", flush=True)
             await page.goto("https://note.com/login", wait_until="networkidle", timeout=30000)
             await asyncio.sleep(3)
@@ -63,12 +60,13 @@ async def save_to_note(title, body_text, note_email, note_password, headless):
                 return
 
             print("✅ ログイン成功", flush=True)
-            await context.storage_state(path=str(SESSION_FILE))
 
+            # 新規記事作成ページへ
             print("📝 新規記事作成ページを開いています...", flush=True)
             await page.goto("https://note.com/notes/new", wait_until="networkidle", timeout=30000)
             await asyncio.sleep(4)
 
+            # タイトル入力
             print("✏️ タイトルを入力中...", flush=True)
             title_selectors = [
                 "textarea[placeholder*='タイトル']",
@@ -96,6 +94,7 @@ async def save_to_note(title, body_text, note_email, note_password, headless):
 
             await asyncio.sleep(1)
 
+            # 本文入力
             print("📄 本文を入力中...", flush=True)
             body_selectors = [".ProseMirror", "[contenteditable='true']", "div[role='textbox']"]
             body_input = None
@@ -122,6 +121,7 @@ async def save_to_note(title, body_text, note_email, note_password, headless):
                 print(json.dumps({"success": False, "message": "本文入力欄が見つかりませんでした"}))
                 return
 
+            # 下書き保存
             print("💾 下書き保存中...", flush=True)
             await asyncio.sleep(1)
             try:
@@ -129,7 +129,6 @@ async def save_to_note(title, body_text, note_email, note_password, headless):
                 if save_btn:
                     await save_btn.click()
                     await asyncio.sleep(3)
-                    await context.storage_state(path=str(SESSION_FILE))
                     print("✅ 下書き保存完了!", flush=True)
                     print(json.dumps({"success": True, "message": "下書き保存完了", "url": page.url}))
             except Exception as e:
@@ -179,9 +178,6 @@ def save_to_note_sync(
             timeout=120,
             cwd=str(Path.cwd())
         )
-
-        if result.returncode != 0:
-            return {"success": False, "message": f"プロセスエラー"}
 
         return {"success": True, "message": "下書き保存完了"}
 
