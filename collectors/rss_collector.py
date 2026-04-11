@@ -21,6 +21,9 @@ RSS_FEEDS = {
         {"name": "Zenn トレンド", "url": "https://zenn.dev/feed"},
         {"name": "ITmedia NEWS", "url": "https://rss.itmedia.co.jp/rss/2.0/news_bursts.xml"},
         {"name": "ASCII.jp", "url": "https://ascii.jp/rss.xml"},
+        {"name": "ヤフーニュース AI", "url": "https://news.yahoo.co.jp/rss/topics/it.xml"},
+        {"name": "Ledge.ai", "url": "https://ledge.ai/feed/"},
+        {"name": "AI NOW", "url": "https://ainow.ai/feed/"},
     ],
     "business": [
         {"name": "MarkeZine", "url": "https://markezine.jp/rss/index.rdf"},
