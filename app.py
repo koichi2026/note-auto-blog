@@ -200,6 +200,7 @@ with tab1:
                 os.environ["GEMINI_API_KEY"] = gemini_key
 
                 from generators.article_generator import generate_article, save_article
+                from github_storage import save_article_to_github
 
                 if generate_mode == "手動でテーマを入力":
                     source_list = [{
@@ -233,6 +234,7 @@ with tab1:
 
                     if article:
                         filepath = save_article(article)
+                        save_article_to_github(article)
                         article["_filepath"] = str(filepath)
                         generated.append(article)
                         status_text.text(f"✅ 「{article.get('title', '')}」を生成しました")
