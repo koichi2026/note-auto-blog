@@ -136,12 +136,30 @@ async def save_to_note(
 async def check_login_status(page: Page) -> bool:
     """ログイン状態を確認する"""
     try:
-        # ログイン済みのユーザーアイコンやメニューを確認
-        await page.wait_for_selector("[data-testid='header-user-icon'], .o-header__iconUser, .p-header__userIcon", timeout=5000)
-        return True
+        # URLがnote.comのトップやダッシュボードになっているか確認
+        current_url = page.url
+        if "note.com/login" in current_url or "note.com/signin" in current_url:
+            return False
+        # ログイン済みの要素を確認（複数のセレクタを試す）
+        for selector in [
+            "[data-testid='header-user-icon']",
+            ".o-header__iconUser",
+            ".p-header__userIcon",
+            "a[href*='/settings']",
+            "button[aria-label*='アカウント']",
+            ".m-headerNav__userIcon",
+        ]:
+            try:
+                await page.wait_for_selector(selector, timeout=2000)
+                return True
+            except Exception:
+                continue
+        # URLベースで判断（ログインページでなければログイン済みとみなす）
+        if "note.com" in current_url and "login" not in current_url:
+            return True
+        return False
     except Exception:
         return False
-
 
 async def login_to_note(page: Page, email: str, password: str) -> dict:
     """noteにログインする"""
