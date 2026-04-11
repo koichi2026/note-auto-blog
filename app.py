@@ -160,7 +160,7 @@ with tab1:
                     try:
                         from collectors.rss_collector import collect_articles
                         articles = collect_articles(
-                            categories=categories,
+                            categories=["claude","gemini","ai_tips"],
                             max_age_hours=max_age_hours,
                             limit=max_articles * 5
                         )
