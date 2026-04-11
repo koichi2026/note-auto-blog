@@ -1,6 +1,7 @@
 """
 記事生成モジュール
-Claude APIを使って、話題のAIテーマを調査し初心者向け解説記事を生成します
+Claude APIを使って、AI初心者向けのツール活用記事を生成します
+テーマ：Claude・ChatGPT・GeminiなどのAIツールの使い方・活用法
 """
 
 import json
@@ -8,96 +9,67 @@ import os
 import anthropic
 from datetime import datetime
 from pathlib import Path
+import random
 
 ARTICLES_DIR = Path("data/articles")
 
-
-def build_theme_research_prompt(source_articles: list) -> str:
-    """収集した記事からAIテーマ候補を抽出するプロンプト"""
-    articles_text = "\n".join([
-        f"・{a['title']} ({a['source']})"
-        for a in source_articles[:15]
-    ])
-
-    return f"""あなたはAI分野のトレンドリサーチャーです。
-
-以下は最新のニュース・記事一覧です：
-{articles_text}
-
-これらを分析して、今最も注目されているAIテーマを3つ選んでください。
-
-必ず以下のJSON形式のみで返答してください（コードブロック不要）：
-{{
-  "themes": [
-    {{
-      "theme": "テーマ名（20文字以内）",
-      "reason": "なぜ今注目されているか（50文字以内）",
-      "score": 注目度スコア（1-10の整数）
-    }},
-    {{
-      "theme": "テーマ名2",
-      "reason": "理由2",
-      "score": スコア2
-    }},
-    {{
-      "theme": "テーマ名3",
-      "reason": "理由3",
-      "score": スコア3
-    }}
-  ],
-  "selected_theme": "最も注目度が高いテーマ名",
-  "selected_reason": "選んだ理由（100文字以内）"
-}}"""
+# AI初心者向けテーマリスト
+BEGINNER_THEMES = [
+    {"theme": "Claudeの使い方入門", "angle": "初めてClaudeを使う人向けの基本操作と便利な使い方"},
+    {"theme": "ChatGPTで仕事を効率化する方法", "angle": "ビジネスシーンでChatGPTを活用する具体的な方法"},
+    {"theme": "AIツールでブログ記事を書く方法", "angle": "AIを使って質の高いブログ記事を効率的に作成する方法"},
+    {"theme": "Geminiの使い方と活用術", "angle": "GoogleのAI「Gemini」の基本から応用まで"},
+    {"theme": "AIで副業を始める方法", "angle": "AIツールを使って副収入を得る具体的な方法"},
+    {"theme": "ClaudeとChatGPTの違いと使い分け", "angle": "それぞれの特徴を理解して使い分ける方法"},
+    {"theme": "AIプロンプトの書き方入門", "angle": "AIに伝わりやすい指示文の書き方と具体例"},
+    {"theme": "AIで英語学習を効率化する方法", "angle": "AIツールを英語学習に活用する具体的な方法"},
+    {"theme": "AIで資料作成を自動化する方法", "angle": "PowerPoint・Googleスライドの作成をAIで効率化"},
+    {"theme": "AIツールの料金比較と選び方", "angle": "無料・有料プランの違いと自分に合ったAIの選び方"},
+    {"theme": "Claudeで議事録を自動作成する方法", "angle": "会議の音声・テキストからAIで議事録を作る方法"},
+    {"theme": "AIプロンプトで副業収入を得る方法", "angle": "プロンプトエンジニアリングを活用した収益化"},
+    {"theme": "AIで動画台本を自動生成する方法", "angle": "YouTubeやSNS動画の台本をAIで効率的に作成"},
+    {"theme": "AIチャットボットの作り方入門", "angle": "ノーコードでオリジナルAIチャットボットを作る方法"},
+    {"theme": "Claudeを使った文章改善テクニック", "angle": "ビジネス文書・メール・ブログをAIで品質アップ"},
+]
 
 
-def build_article_prompt(theme: str, reason: str, source_articles: list) -> str:
-    """選ばれたテーマで初心者向け解説記事を生成するプロンプト"""
-    articles_text = "\n".join([
-        f"・{a['title']}"
-        for a in source_articles[:5]
-    ])
+def select_theme(source_articles: list) -> dict:
+    return random.choice(BEGINNER_THEMES)
 
-    return f"""あなたはnote向けの初心者向けAI解説記事を書く専門ライターです。
 
-【テーマ】{theme}
-【注目理由】{reason}
-【参考ニュース】
-{articles_text}
+def build_article_prompt(theme: str, angle: str, source_articles: list) -> str:
+    news_text = "\n".join([f"・{a['title']}" for a in source_articles[:5]])
 
-以下の構成で、AI初心者でも分かりやすい解説記事を書いてください：
+    return f"""あなたはnote向けのAI初心者向け解説記事を書く専門ライターです。
 
-【構成ルール】
-1. 話題の概要（このテーマが何かを一言で説明）
-2. なぜ今注目されているか（背景・きっかけ）
-3. 仕組みをやさしく説明（専門用語には必ずかんたんな補足をつける）
-4. 実際に何が変わるか（私たちの生活・仕事への影響）
-5. 注意点（リスク・課題・気をつけること）
+【記事テーマ】{theme}
+【記事の切り口】{angle}
+【参考トレンド情報】
+{news_text}
 
-【文体ルール】
+以下の構成で、AI初心者でも実践できる解説記事を書いてください：
+
+## 必須構成（この順番で書く）
+1. **話題の概要**（このテーマが何かを一言で、なぜ今知るべきかを説明）
+2. **なぜ注目されているか**（背景・社会的な変化・メリット）
+3. **仕組みをやさしく説明**（技術的な話をたとえ話で分かりやすく）
+4. **実際の使い方・ステップ**（初心者でもすぐ実践できる手順を具体的に）
+5. **活用事例**（実際にどんな場面で使えるか、具体例3つ）
+6. **注意点・デメリット**（リスクや気をつけること）
+
+## 文体ルール
 - 「です・ます調」で統一
+- 専門用語には必ず（）で補足説明
 - 煽りすぎず、分かりやすさ重視
-- 専門用語には必ず（）で補足説明をつける
-- 読者に語りかける文体
-- 本文は1,500〜2,500文字
+- 読者への語りかけを適度に入れる
+- 本文は2,000〜2,500文字
+- 各見出しの下に必ず3文以上書く
 
 必ず以下のJSON形式のみで返答してください（コードブロック不要）：
-{{
-  "title": "選ばれたメインタイトル（30〜40文字）",
-  "title_alternatives": ["タイトル案2（30〜40文字）", "タイトル案3（30〜40文字）"],
-  "lead": "リード文（150〜200文字、記事の価値を端的に伝える）",
-  "body": "本文（Markdown形式、## で5つの見出しを使って構造化）",
-  "summary": "まとめ（200〜300文字、読者への行動促進）",
-  "hashtags": ["タグ1", "タグ2", "タグ3", "タグ4", "タグ5", "タグ6", "タグ7", "タグ8", "タグ9", "タグ10"],
-  "estimated_read_time": 読了時間（分・整数）,
-  "theme": "{theme}"
-}}"""
+{{"title": "メインタイトル（30〜40文字、初心者向けと分かるもの）", "title_alternatives": ["タイトル案2（30〜40文字）", "タイトル案3（30〜40文字）"], "lead": "リード文（150〜200文字、初心者が読みたくなる内容）", "body": "本文（Markdown形式、## で6つの見出しを使って2000文字以上）", "summary": "まとめ（200〜300文字、読者への行動促進）", "hashtags": ["AI", "Claude", "ChatGPT", "AI活用", "初心者向け", "AIツール", "仕事効率化", "生成AI", "AI入門", "デジタル活用"], "estimated_read_time": 7, "theme": "{theme}"}}"""
 
 
 def generate_article(source_title, source_summary, category, source_url, source_name, all_articles=None):
-    """
-    Claude APIを使って記事を生成する
-    all_articles: 収集した全記事リスト（テーマ選定に使用）
-    """
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
     if not api_key:
         print("❌ ANTHROPIC_API_KEY が設定されていません")
@@ -105,52 +77,25 @@ def generate_article(source_title, source_summary, category, source_url, source_
 
     client = anthropic.Anthropic(api_key=api_key)
 
-    # 記事リストがない場合は単一記事から生成
     if not all_articles:
         all_articles = [{"title": source_title, "source": source_name}]
 
     try:
-        # Step 1: テーマ候補を3つ抽出
-        print("🔍 話題のAIテーマを調査中...")
-        theme_response = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=1000,
-            messages=[{
-                "role": "user",
-                "content": build_theme_research_prompt(all_articles)
-            }]
-        )
+        selected = select_theme(all_articles)
+        theme = selected["theme"]
+        angle = selected["angle"]
 
-        theme_text = theme_response.content[0].text
-        if "```json" in theme_text:
-            theme_json = theme_text.split("```json")[1].split("```")[0].strip()
-        elif "```" in theme_text:
-            theme_json = theme_text.split("```")[1].split("```")[0].strip()
-        else:
-            theme_json = theme_text.strip()
+        print(f"📋 今回のテーマ: 【{theme}】")
+        print(f"   切り口: {angle}")
+        print(f"✍️ 初心者向け記事を生成中...")
 
-        theme_data = json.loads(theme_json)
-        themes = theme_data.get("themes", [])
-        selected_theme = theme_data.get("selected_theme", source_title)
-        selected_reason = theme_data.get("selected_reason", "")
-
-        print(f"📋 テーマ候補:")
-        for t in themes:
-            print(f"  {'★' if t['theme'] == selected_theme else '　'} {t['theme']} (スコア:{t['score']}) - {t['reason']}")
-        print(f"✅ 選択テーマ: {selected_theme}")
-
-        # Step 2: 選ばれたテーマで記事生成
-        print(f"✍️ 記事生成中: {selected_theme}...")
-        article_response = client.messages.create(
+        response = client.messages.create(
             model="claude-haiku-4-5-20251001",
             max_tokens=4000,
-            messages=[{
-                "role": "user",
-                "content": build_article_prompt(selected_theme, selected_reason, all_articles)
-            }]
+            messages=[{"role": "user", "content": build_article_prompt(theme, angle, all_articles)}]
         )
 
-        raw_text = article_response.content[0].text
+        raw_text = response.content[0].text
         if "```json" in raw_text:
             json_str = raw_text.split("```json")[1].split("```")[0].strip()
         elif "```" in raw_text:
@@ -166,15 +111,13 @@ def generate_article(source_title, source_summary, category, source_url, source_
             "generated_at": datetime.now().isoformat(),
             "status": "draft",
             "ai_model": "claude-haiku-4-5",
-            "themes_considered": themes,
-            "selected_theme": selected_theme
+            "selected_theme": theme
         })
 
-        print(f"✅ 記事生成完了: {article_data.get('title', '')}")
-        print(f"📝 タイトル案:")
-        print(f"  1. {article_data.get('title', '')}")
+        print(f"✅ 記事生成完了!")
+        print(f"📝 タイトル1: {article_data.get('title', '')}")
         for i, alt in enumerate(article_data.get('title_alternatives', []), 2):
-            print(f"  {i}. {alt}")
+            print(f"📝 タイトル{i}: {alt}")
 
         return article_data
 
@@ -187,13 +130,7 @@ def generate_article(source_title, source_summary, category, source_url, source_
 
 
 def format_for_note(article_data: dict) -> str:
-    """記事データをnote用テキストにフォーマット"""
-    lines = [
-        article_data.get("lead", ""), "",
-        article_data.get("body", ""), "",
-        "## まとめ", "",
-        article_data.get("summary", ""), ""
-    ]
+    lines = [article_data.get("lead", ""), "", article_data.get("body", ""), "", "## まとめ", "", article_data.get("summary", ""), ""]
     hashtags = article_data.get("hashtags", [])
     if hashtags:
         lines.append(" ".join([f"#{t}" if not t.startswith("#") else t for t in hashtags]))
@@ -201,7 +138,6 @@ def format_for_note(article_data: dict) -> str:
 
 
 def save_article(article_data: dict) -> Path:
-    """記事をJSONファイルとして保存"""
     ARTICLES_DIR.mkdir(parents=True, exist_ok=True)
     filename = ARTICLES_DIR / f"article_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
     with open(filename, "w", encoding="utf-8") as f:
@@ -211,7 +147,6 @@ def save_article(article_data: dict) -> Path:
 
 
 def load_articles(status_filter=None):
-    """保存済み記事を読み込む"""
     if not ARTICLES_DIR.exists():
         return []
     articles = []
@@ -225,7 +160,6 @@ def load_articles(status_filter=None):
 
 
 def update_article_status(filepath: str, status: str):
-    """記事のステータスを更新"""
     with open(filepath, "r", encoding="utf-8") as f:
         data = json.load(f)
     data["status"] = status
