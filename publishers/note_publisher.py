@@ -333,34 +333,43 @@ async def add_hashtags_to_body(page: Page, tag_text: str):
         await page.keyboard.type(tag_text)
     except Exception as e:
         print(f"⚠️ ハッシュタグ追加エラー（スキップ）: {e}")
-
-
 async def save_draft(page: Page) -> dict:
     """下書き保存ボタンをクリックする"""
+    await asyncio.sleep(2)
+    
+    # ページのボタンを全て取得して確認
+    try:
+        # すべてのボタンテキストを確認
+        buttons = await page.query_selector_all("button")
+        print(f"🔍 ボタン数: {len(buttons)}")
+        for btn in buttons:
+            text = await btn.inner_text()
+            if text.strip():
+                print(f"   ボタン: '{text.strip()}'")
+    except Exception:
+        pass
+
     save_selectors = [
         "button:has-text('下書き保存')",
+        "button:has-text('下書きに保存')",
+        "button:has-text('保存する')",
         "button:has-text('保存')",
         "[data-testid='save-draft-button']",
+        "[data-testid='draft-save-button']",
         ".o-editor__saveButton",
+        ".p-editor__saveButton",
     ]
 
     for selector in save_selectors:
         try:
-            btn = await page.wait_for_selector(selector, timeout=5000)
+            btn = await page.wait_for_selector(selector, timeout=3000)
             if btn:
+                await btn.scroll_into_view_if_needed()
+                await asyncio.sleep(0.5)
                 await btn.click()
-                await asyncio.sleep(2)
-
-                # 保存完了の確認（トースト通知など）
-                try:
-                    await page.wait_for_selector(
-                        "text='保存しました', text='下書きに保存', .toast, [role='alert']",
-                        timeout=5000
-                    )
-                except Exception:
-                    pass  # 通知が見つからなくても続行
-
+                await asyncio.sleep(3)
                 current_url = page.url
+                print(f"✅ 下書き保存ボタンクリック成功: {selector}")
                 return {
                     "success": True,
                     "message": "下書き保存完了",
@@ -369,15 +378,29 @@ async def save_draft(page: Page) -> dict:
         except Exception:
             continue
 
-    # キーボードショートカットで試みる
+    # JavaScriptでボタンを探してクリック
     try:
-        await page.keyboard.press("Control+s")
-        await asyncio.sleep(2)
-        return {"success": True, "message": "下書き保存完了（ショートカット）", "url": page.url}
+        result = await page.evaluate("""
+            () => {
+                const buttons = document.querySelectorAll('button');
+                for (const btn of buttons) {
+                    const text = btn.innerText || btn.textContent;
+                    if (text && (text.includes('下書き') || text.includes('保存'))) {
+                        btn.click();
+                        return text;
+                    }
+                }
+                return null;
+            }
+        """)
+        if result:
+            await asyncio.sleep(3)
+            print(f"✅ JS経由でボタンクリック: {result}")
+            return {"success": True, "message": f"下書き保存完了（JS: {result}）", "url": page.url}
     except Exception as e:
-        return {"success": False, "message": f"下書き保存ボタンが見つかりませんでした: {str(e)}"}
+        print(f"⚠️ JSエラー: {e}")
 
-
+    return {"success": False, "message": "下書き保存ボタンが見つかりませんでした"}
 # 同期版ラッパー
 def save_to_note_sync(
     title: str,
