@@ -43,7 +43,7 @@ async def save_to_note(
         try:
             # ログイン
             print("🔐 ログイン中...")
-           await page.goto("https://note.com/login", wait_until="networkidle", timeout=30000)
+            await page.goto("https://note.com/login", wait_until="networkidle", timeout=30000)
             await asyncio.sleep(3)
 
             # input要素が表示されるまで待機
@@ -54,7 +54,6 @@ async def save_to_note(
             if len(inputs) < 2:
                 return {"success": False, "message": "ログインフォームが見つかりませんでした"}
 
-            # 表示されているinputを確認してから入力
             await inputs[0].wait_for_element_state("visible", timeout=5000)
             await inputs[0].click()
             await asyncio.sleep(0.5)
@@ -66,6 +65,7 @@ async def save_to_note(
             await asyncio.sleep(0.5)
             await inputs[1].fill(note_password)
             await asyncio.sleep(0.5)
+
             await page.click("button:has-text('ログイン')")
             await asyncio.sleep(5)
 
@@ -90,7 +90,6 @@ async def save_to_note(
                 "textarea[placeholder*='タイトル']",
                 "input[placeholder*='タイトル']",
                 "[data-testid='title']",
-                ".title-input",
                 "h1[contenteditable='true']",
                 "div[contenteditable='true']:first-of-type",
             ]
@@ -108,7 +107,6 @@ async def save_to_note(
                 await asyncio.sleep(0.5)
                 await title_input.fill(title)
             else:
-                # Tabキーで最初のフィールドに移動
                 await page.keyboard.press("Tab")
                 await asyncio.sleep(0.5)
                 await page.keyboard.type(title)
@@ -139,7 +137,6 @@ async def save_to_note(
             if body_input:
                 await body_input.click()
                 await asyncio.sleep(1)
-                # クリップボード経由で貼り付け
                 await page.evaluate("(text) => navigator.clipboard.writeText(text)", body_text)
                 await asyncio.sleep(0.5)
                 await page.keyboard.press("Control+v")
@@ -174,6 +171,7 @@ async def save_to_note(
         finally:
             await context.close()
             await browser.close()
+
 
 def save_to_note_sync(
     title: str,
