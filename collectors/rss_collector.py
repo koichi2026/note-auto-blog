@@ -115,7 +115,7 @@ def collect_articles(
                     if published:
                         pub_dt = datetime(*published[:6])
                         if pub_dt < cutoff_time:
-                            continue
+                            pass
                     title = entry.get("title", "").strip()
                     summary = clean_html(entry.get("summary", "")).strip()[:500]
                     if not title:
