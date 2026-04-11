@@ -11,22 +11,22 @@ from pathlib import Path
 
 RSS_FEEDS = {
     "tech": [
-        {"name": "note AI", "url": "https://note.com/hashtag/AI?rss=1"},
-        {"name": "note ChatGPT", "url": "https://note.com/hashtag/ChatGPT?rss=1"},
-        {"name": "note Claude", "url": "https://note.com/hashtag/Claude?rss=1"},
-        {"name": "note 生成AI", "url": "https://note.com/hashtag/生成AI?rss=1"},
-        {"name": "note AIツール", "url": "https://note.com/hashtag/AIツール?rss=1"},
-        {"name": "note AI活用", "url": "https://note.com/hashtag/AI活用?rss=1"},
+        {"name": "note AI", "url": "https://note.com/hashtag/AI/rss"},
+        {"name": "note ChatGPT", "url": "https://note.com/hashtag/ChatGPT/rss"},
+        {"name": "note Claude", "url": "https://note.com/hashtag/Claude?rss"},
+        {"name": "note 生成AI", "url": "https://note.com/hashtag/生成AI?rss"},
+        {"name": "note AIツール", "url": "https://note.com/hashtag/AIツール?rss"},
+        {"name": "note AI活用", "url": "https://note.com/hashtag/AI活用?rss"},
         {"name": "Zenn トレンド", "url": "https://zenn.dev/feed"},
         {"name": "Ledge.ai", "url": "https://ledge.ai/feed/"},
         {"name": "ITmedia NEWS", "url": "https://rss.itmedia.co.jp/rss/2.0/news_bursts.xml"},
         {"name": "ヤフーニュース AI", "url": "https://news.yahoo.co.jp/rss/topics/it.xml"},
     ],
     "business": [
-        {"name": "note 副業", "url": "https://note.com/hashtag/副業?rss=1"},
-        {"name": "note AI副業", "url": "https://note.com/hashtag/AI副業?rss=1"},
-        {"name": "note 仕事効率化", "url": "https://note.com/hashtag/仕事効率化?rss=1"},
-        {"name": "note プロンプト", "url": "https://note.com/hashtag/プロンプト?rss=1"},
+        {"name": "note 副業", "url": "https://note.com/hashtag/副業?rss"},
+        {"name": "note AI副業", "url": "https://note.com/hashtag/AI副業?rss"},
+        {"name": "note 仕事効率化", "url": "https://note.com/hashtag/仕事効率化?rss"},
+        {"name": "note プロンプト", "url": "https://note.com/hashtag/プロンプト?rss"},
         {"name": "ライフハッカー", "url": "https://www.lifehacker.jp/feed/index.xml"},
         {"name": "MarkeZine", "url": "https://markezine.jp/rss/index.rdf"},
     ]
