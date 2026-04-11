@@ -43,18 +43,31 @@ async def save_to_note(
         try:
             # ログイン
             print("🔐 ログイン中...")
-            await page.goto("https://note.com/login", wait_until="networkidle", timeout=30000)
-            await asyncio.sleep(2)
+           await page.goto("https://note.com/login", wait_until="networkidle", timeout=30000)
+            await asyncio.sleep(3)
+
+            # input要素が表示されるまで待機
+            await page.wait_for_selector("input", state="visible", timeout=10000)
+            await asyncio.sleep(1)
 
             inputs = await page.query_selector_all("input")
             if len(inputs) < 2:
                 return {"success": False, "message": "ログインフォームが見つかりませんでした"}
 
+            # 表示されているinputを確認してから入力
+            await inputs[0].wait_for_element_state("visible", timeout=5000)
+            await inputs[0].click()
+            await asyncio.sleep(0.5)
             await inputs[0].fill(note_email)
+            await asyncio.sleep(0.5)
+
+            await inputs[1].wait_for_element_state("visible", timeout=5000)
+            await inputs[1].click()
+            await asyncio.sleep(0.5)
             await inputs[1].fill(note_password)
             await asyncio.sleep(0.5)
             await page.click("button:has-text('ログイン')")
-            await asyncio.sleep(4)
+            await asyncio.sleep(5)
 
             # ログイン確認
             if "login" in page.url:
