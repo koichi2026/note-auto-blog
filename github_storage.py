@@ -1,4 +1,3 @@
-@'
 import json, os, base64, urllib.request, urllib.error
 from datetime import datetime
 
@@ -16,7 +15,7 @@ def save_article_to_github(article_data):
     req = urllib.request.Request(url,data=json.dumps(payload).encode("utf-8"),headers={"Authorization":f"token {token}","Content-Type":"application/json","Accept":"application/vnd.github.v3+json"},method="PUT")
     try:
         with urllib.request.urlopen(req,timeout=30) as r:
-            return {"success":True,"message":"GitHubに保存しました","path":filename}
+            return {"success":True,"message":"GitHubに保存しました"}
     except urllib.error.HTTPError as e:
         return {"success":False,"message":f"GitHub保存エラー: {e.read().decode('utf-8')[:200]}"}
     except Exception as e:
@@ -46,4 +45,3 @@ def load_articles_from_github():
     except Exception as e:
         print(f"GitHub記事取得エラー: {e}")
         return []
-'@ | Set-Content -Path "github_storage.py" -Encoding UTF8
