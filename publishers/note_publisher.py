@@ -1,95 +1,80 @@
 """
 note下書き保存モジュール
-Playwrightを使ってnote.comに記事を下書き保存します
+サブプロセスでPlaywrightを実行してnote.comに記事を下書き保存します
 """
 
-import asyncio
 import os
+import sys
+import json
+import subprocess
+import tempfile
 from pathlib import Path
-from datetime import datetime
 
-try:
-    from playwright.async_api import async_playwright, Page
-    PLAYWRIGHT_AVAILABLE = True
-except ImportError:
-    PLAYWRIGHT_AVAILABLE = False
-
+PLAYWRIGHT_AVAILABLE = True
 SESSION_DIR = Path("data/sessions")
 SESSION_FILE = SESSION_DIR / "note_session.json"
 
+# Playwrightを実行するサブスクリプト
+PLAYWRIGHT_SCRIPT = '''
+import asyncio
+import sys
+import json
+import os
+from pathlib import Path
+from playwright.async_api import async_playwright
 
-async def save_to_note(
-    title: str,
-    body_text: str,
-    hashtags: list,
-    note_email: str,
-    note_password: str,
-    headless: bool = True
-) -> dict:
-    if not PLAYWRIGHT_AVAILABLE:
-        return {"success": False, "message": "Playwrightがインストールされていません"}
+SESSION_FILE = Path("data/sessions/note_session.json")
 
-    SESSION_DIR.mkdir(parents=True, exist_ok=True)
-
+async def save_to_note(title, body_text, note_email, note_password, headless):
+    SESSION_FILE.parent.mkdir(parents=True, exist_ok=True)
+    
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=headless)
         context_options = {}
         if SESSION_FILE.exists():
             context_options["storage_state"] = str(SESSION_FILE)
-
+        
         context = await browser.new_context(**context_options)
         page = await context.new_page()
-
+        
         try:
-            # ログイン
-            print("🔐 ログイン中...")
+            print("🔐 ログイン中...", flush=True)
             await page.goto("https://note.com/login", wait_until="networkidle", timeout=30000)
             await asyncio.sleep(3)
-
-            # input要素が表示されるまで待機
             await page.wait_for_selector("input", state="visible", timeout=10000)
             await asyncio.sleep(1)
-
+            
             inputs = await page.query_selector_all("input")
             if len(inputs) < 2:
-                return {"success": False, "message": "ログインフォームが見つかりませんでした"}
-
-            await inputs[0].wait_for_element_state("visible", timeout=5000)
+                print(json.dumps({"success": False, "message": "ログインフォームが見つかりませんでした"}))
+                return
+            
             await inputs[0].click()
             await asyncio.sleep(0.5)
             await inputs[0].fill(note_email)
             await asyncio.sleep(0.5)
-
-            await inputs[1].wait_for_element_state("visible", timeout=5000)
             await inputs[1].click()
             await asyncio.sleep(0.5)
             await inputs[1].fill(note_password)
             await asyncio.sleep(0.5)
-
             await page.click("button:has-text('ログイン')")
             await asyncio.sleep(5)
-
-            # ログイン確認
+            
             if "login" in page.url:
-                return {"success": False, "message": "ログインに失敗しました"}
-
-            print("✅ ログイン成功")
+                print(json.dumps({"success": False, "message": "ログインに失敗しました"}))
+                return
+            
+            print("✅ ログイン成功", flush=True)
             await context.storage_state(path=str(SESSION_FILE))
-
-            # 新規記事作成ページへ
-            print("📝 新規記事作成ページを開いています...")
+            
+            print("📝 新規記事作成ページを開いています...", flush=True)
             await page.goto("https://note.com/notes/new", wait_until="networkidle", timeout=30000)
             await asyncio.sleep(4)
-
-            current_url = page.url
-            print(f"📍 エディタURL: {current_url}")
-
-            # タイトル入力
-            print("✏️ タイトルを入力中...")
+            
+            print("✏️ タイトルを入力中...", flush=True)
             title_selectors = [
                 "textarea[placeholder*='タイトル']",
                 "input[placeholder*='タイトル']",
-                "[data-testid='title']",
                 "h1[contenteditable='true']",
                 "div[contenteditable='true']:first-of-type",
             ]
@@ -101,7 +86,7 @@ async def save_to_note(
                         break
                 except Exception:
                     continue
-
+            
             if title_input:
                 await title_input.click()
                 await asyncio.sleep(0.5)
@@ -110,17 +95,11 @@ async def save_to_note(
                 await page.keyboard.press("Tab")
                 await asyncio.sleep(0.5)
                 await page.keyboard.type(title)
-
+            
             await asyncio.sleep(1)
-
-            # 本文入力
-            print("📄 本文を入力中...")
-            body_selectors = [
-                ".ProseMirror",
-                "[contenteditable='true']",
-                "div[role='textbox']",
-                ".ql-editor",
-            ]
+            
+            print("📄 本文を入力中...", flush=True)
+            body_selectors = [".ProseMirror", "[contenteditable='true']", "div[role='textbox']"]
             body_input = None
             for selector in body_selectors:
                 try:
@@ -133,7 +112,7 @@ async def save_to_note(
                         break
                 except Exception:
                     continue
-
+            
             if body_input:
                 await body_input.click()
                 await asyncio.sleep(1)
@@ -142,35 +121,36 @@ async def save_to_note(
                 await page.keyboard.press("Control+v")
                 await asyncio.sleep(2)
             else:
-                return {"success": False, "message": "本文入力欄が見つかりませんでした"}
-
-            # 下書き保存ボタンをクリック
-            print("💾 下書き保存中...")
+                print(json.dumps({"success": False, "message": "本文入力欄が見つかりませんでした"}))
+                return
+            
+            print("💾 下書き保存中...", flush=True)
             await asyncio.sleep(1)
-            try:
-                save_btn = await page.wait_for_selector("button:has-text('下書き保存')", timeout=5000)
-                if save_btn:
-                    await save_btn.click()
-                    await asyncio.sleep(3)
-                    print("✅ 下書き保存完了!")
-                    await context.storage_state(path=str(SESSION_FILE))
-                    return {
-                        "success": True,
-                        "message": "下書き保存完了",
-                        "url": page.url
-                    }
-            except Exception as e:
-                return {"success": False, "message": f"下書き保存ボタンが見つかりませんでした: {e}"}
-
+            save_btn = await page.wait_for_selector("button:has-text('下書き保存')", timeout=5000)
+            if save_btn:
+                await save_btn.click()
+                await asyncio.sleep(3)
+                await context.storage_state(path=str(SESSION_FILE))
+                print("✅ 下書き保存完了!", flush=True)
+                print(json.dumps({"success": True, "message": "下書き保存完了", "url": page.url}))
+            else:
+                print(json.dumps({"success": False, "message": "下書き保存ボタンが見つかりませんでした"}))
+        
         except Exception as e:
-            screenshot_path = Path("data/screenshots") / f"error_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
-            screenshot_path.parent.mkdir(parents=True, exist_ok=True)
-            await page.screenshot(path=str(screenshot_path))
-            return {"success": False, "message": f"エラー: {str(e)}"}
-
+            print(json.dumps({"success": False, "message": f"エラー: {str(e)}"}))
         finally:
             await context.close()
             await browser.close()
+
+data = json.loads(sys.argv[1])
+asyncio.run(save_to_note(
+    data["title"],
+    data["body_text"],
+    data["note_email"],
+    data["note_password"],
+    data["headless"]
+))
+'''
 
 
 def save_to_note_sync(
@@ -181,18 +161,47 @@ def save_to_note_sync(
     note_password: str,
     headless: bool = True
 ) -> dict:
-    import nest_asyncio
-    nest_asyncio.apply()
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+    """サブプロセスでPlaywrightを実行してnoteに下書き保存する"""
+    
+    # 一時スクリプトファイルを作成
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False, encoding='utf-8') as f:
+        f.write(PLAYWRIGHT_SCRIPT)
+        script_path = f.name
+    
     try:
-        return loop.run_until_complete(save_to_note(
-            title=title,
-            body_text=body_text,
-            hashtags=hashtags,
-            note_email=note_email,
-            note_password=note_password,
-            headless=headless
-        ))
+        # 引数データ
+        data = {
+            "title": title,
+            "body_text": body_text,
+            "note_email": note_email,
+            "note_password": note_password,
+            "headless": headless
+        }
+        
+        # サブプロセスで実行
+        result = subprocess.run(
+            [sys.executable, script_path, json.dumps(data)],
+            capture_output=False,
+            text=True,
+            timeout=120,
+            cwd=str(Path.cwd())
+        )
+        
+        # 出力からJSONを抽出
+        output = result.stdout if result.stdout else ""
+        for line in output.strip().split('\n'):
+            line = line.strip()
+            if line.startswith('{"success"'):
+                return json.loads(line)
+        
+        if result.returncode != 0:
+            return {"success": False, "message": f"プロセスエラー: {result.stderr[:200]}"}
+        
+        return {"success": False, "message": "結果を取得できませんでした"}
+    
+    except subprocess.TimeoutExpired:
+        return {"success": False, "message": "タイムアウト（120秒）"}
+    except Exception as e:
+        return {"success": False, "message": f"実行エラー: {str(e)}"}
     finally:
-        loop.close()
+        Path(script_path).unlink(missing_ok=True)
